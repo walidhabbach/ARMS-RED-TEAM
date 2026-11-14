@@ -1,0 +1,615 @@
+{
+  "project": "Agentic Red Team - ARMS simulator",
+  "generated_at": "2026-11-14T05:17:20.668388+00:00",
+  "scope": "Local simulator only; synthetic transactions only.",
+  "agents": {
+    "1_reconnaissance": {
+      "evidence": {
+        "target": "Local ARMS simulator",
+        "base_url": "http://127.0.0.1:8000",
+        "health": {
+          "status": "ok",
+          "service": "ARMS-simulator",
+          "timestamp": "2026-11-14T05:15:17.689178+00:00"
+        },
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/health",
+            "summary": "Health",
+            "operation_id": "health_health_get"
+          },
+          {
+            "method": "POST",
+            "path": "/transactions",
+            "summary": "Create Transaction",
+            "operation_id": "create_transaction_transactions_post"
+          },
+          {
+            "method": "GET",
+            "path": "/transactions",
+            "summary": "List Transactions",
+            "operation_id": "list_transactions_transactions_get"
+          },
+          {
+            "method": "POST",
+            "path": "/analyze",
+            "summary": "Analyze Transaction",
+            "operation_id": "analyze_transaction_analyze_post"
+          },
+          {
+            "method": "GET",
+            "path": "/transactions/{transaction_id}",
+            "summary": "Get Transaction",
+            "operation_id": "get_transaction_transactions__transaction_id__get"
+          },
+          {
+            "method": "GET",
+            "path": "/alerts",
+            "summary": "List Alerts",
+            "operation_id": "list_alerts_alerts_get"
+          },
+          {
+            "method": "GET",
+            "path": "/logs",
+            "summary": "List Logs",
+            "operation_id": "list_logs_logs_get"
+          }
+        ],
+        "sample_transaction_count": 5,
+        "sample_alert_count": 5,
+        "sample_audit_event_count": 5,
+        "observed_dependencies": [
+          "agno",
+          "openai",
+          "ollama",
+          "fastapi",
+          "uvicorn[standard]",
+          "pydantic",
+          "pydantic-settings",
+          "python-dotenv",
+          "sqlalchemy",
+          "scikit-learn",
+          "numpy",
+          "pandas",
+          "pytest",
+          "httpx",
+          "streamlit"
+        ],
+        "limitations": [
+          "Only the exposed local simulator API was inspected.",
+          "No production infrastructure or external provider was contacted.",
+          "The endpoint inventory does not prove that authentication is required or absent."
+        ]
+      },
+      "analysis": "Here's the analysis of the observed ARMS inventory:\n\n**Observed Assets:**\n\n* Local ARMS simulator\n* Endpoint URLs:\n\t+ `http://127.0.0.1:8000/health`\n\t+ `http://127.0.0.1:8000/transactions` (GET, POST)\n\t+ `http://127.0.0.1:8000/analyze` (POST)\n\t+ `http://127.0.0.1:8000/transactions/{transaction_id}` (GET)\n\t+ `http://127.0.0.1:8000/alerts` (GET)\n\t+ `http://127.0.0.1:8000/logs` (GET)\n* Observed dependencies:\n\t+ `agno`\n\t+ `openai`\n\t+ `ollama`\n\t+ `fastapi`\n\t+ `uvicorn[standard]`\n\t+ `pydantic`\n\t+ `pydantic-settings`\n\t+ `python-dotenv`\n\t+ `sqlalchemy`\n\t+ `scikit-learn`\n\t+ `numpy`\n\t+ `pandas`\n\t+ `pytest`\n\t+ `httpx`\n\t+ `streamlit`\n\n**Data Flows:**\n\n* The simulator exposes health information via the `/health` endpoint.\n* The simulator allows creating, listing, and analyzing transactions via the `/transactions` endpoint.\n* The simulator allows listing alerts and logs via the `/alerts` and `/logs` endpoints, respectively.\n* The simulator exposes individual transaction data via the `/transactions/{transaction_id}` endpoint.\n\n**Attack Surfaces:**\n\n* The exposed API endpoints can be attacked using various methods (e.g., SQL injection, cross-site scripting (XSS), etc.).\n* The `analyze` endpoint may be vulnerable to sensitive data exposure or unauthorized access.\n* The `transactions` endpoint may be vulnerable to unauthorized access or modification.\n\n**Unknowns:**\n\n* The simulator's authentication mechanism is unknown.\n* The simulator's authorization mechanism is unknown.\n* The simulator's data storage and retrieval mechanisms are unknown.\n\n**Recommended Safe Tests:**\n\n* Test the `GET /health` endpoint to verify its functionality.\n* Test the `GET /transactions` endpoint to verify its functionality.\n* Test the `GET /alerts` and `GET /logs` endpoints to verify their functionality.\n* Test the `GET /transactions/{transaction_id}` endpoint to verify its functionality.\n\nNote that these tests are safe because they do not involve any malicious or unauthorized actions. They are designed to verify the simulator's functionality and identify potential vulnerabilities."
+    },
+    "2_attacker": {
+      "evidence": {
+        "scenario": "synthetic_transaction_injection_and_validation_test",
+        "target": "http://127.0.0.1:8000",
+        "tests": [
+          {
+            "name": "synthetic_transaction_submission",
+            "http_status": 200,
+            "accepted": true,
+            "authorization_header_sent": false,
+            "response": {
+              "transaction": {
+                "id": 108,
+                "transaction_ref": "RT-CYBER-457A004CF5",
+                "amount": 7600.0,
+                "currency": "EUR",
+                "country_code": "FR",
+                "merchant_category": "retail",
+                "channel": "online",
+                "account_age_days": 12,
+                "transactions_last_hour": 6,
+                "is_cross_border": true,
+                "status": "ANALYZED",
+                "risk_score": 1.0,
+                "classification": "SUSPICIOUS",
+                "anomaly_score": 1.0,
+                "model_version": "arms-baseline-1.0",
+                "created_at": "2026-11-14T05:15:18.147301"
+              },
+              "explanation": [
+                "High transaction amount (>= EUR 5,000).",
+                "High transaction velocity (>= 5 transactions/hour).",
+                "Cross-border transaction.",
+                "Recently created account (< 30 days).",
+                "Isolation Forest anomaly signal: 1.00 (0–1)."
+              ],
+              "decision": "SUSPICIOUS"
+            },
+            "interpretation": "A test transaction was accepted without an Authorization header; this is a lab observation, not proof of a production breach."
+          },
+          {
+            "name": "negative_amount_validation",
+            "http_status": 422,
+            "rejected_as_expected": true
+          },
+          {
+            "name": "duplicate_reference_protection",
+            "http_status": 409,
+            "rejected_as_expected": true
+          }
+        ],
+        "scope": "Local ARMS simulator and synthetic records only"
+      },
+      "analysis": "**Test Findings and Analysis**\n\n**Test 1: Synthetic Transaction Submission**\n\n* **Name:** synthetic_transaction_submission\n* **HTTP Status:** 200\n* **Accepted:** True\n* **Authorization Header Sent:** False\n* **Response:** The transaction was accepted, and the response contained a transaction ID, reference, amount, currency, and other relevant information.\n\n**Severity:** N/A (expected behavior)\n\n**Rationale:** This is a synthetic transaction test, which is designed to mimic a legitimate transaction. The fact that the transaction was accepted and the response contained relevant information is within expected behavior.\n\n**Fix:** N/A (expected behavior)\n\n**Test 2: Negative Amount Validation**\n\n* **Name:** negative_amount_validation\n* **HTTP Status:** 422\n* **Rejected as Expected:** True\n\n**Severity:** N/A (expected behavior)\n\n**Rationale:** This test was designed to validate the API's handling of negative amounts. The 422 HTTP status code indicates that the request was rejected due to a validation error, which is the expected behavior.\n\n**Fix:** N/A (expected behavior)\n\n**Test 3: Duplicate Reference Protection**\n\n* **Name:** duplicate_reference_protection\n* **HTTP Status:** 409\n* **Rejected as Expected:** True\n\n**Severity:** N/A (expected behavior)\n\n**Rationale:** This test was designed to validate the API's handling of duplicate transaction references. The 409 HTTP status code indicates that the request was rejected due to a duplicate reference, which is the expected behavior.\n\n**Fix:** N/A (expected behavior)\n\n**Conclusion:** All three tests were executed successfully, and the results align with the expected behavior of the API. There are no indications of security breaches or vulnerabilities in this controlled test environment."
+    },
+    "3_ai_adversary": {
+      "evidence": {
+        "scenario": "synthetic_input_perturbation",
+        "target": "http://127.0.0.1:8000",
+        "tests": [
+          {
+            "test": "amount_threshold_neighbourhood",
+            "baseline": {
+              "variant": "baseline",
+              "risk_score": 0.2,
+              "classification": "LEGITIMATE",
+              "anomaly_score": 1.0,
+              "explanation": [
+                "No configured high-risk rule was triggered.",
+                "Isolation Forest anomaly signal: 1.00 (0–1)."
+              ]
+            },
+            "perturbed": {
+              "variant": "perturbed",
+              "risk_score": 0.48,
+              "classification": "LEGITIMATE",
+              "anomaly_score": 1.0,
+              "explanation": [
+                "High transaction amount (>= EUR 5,000).",
+                "Isolation Forest anomaly signal: 1.00 (0–1)."
+              ]
+            },
+            "classification_changed": false,
+            "risk_score_delta": 0.28
+          },
+          {
+            "test": "velocity_threshold_neighbourhood",
+            "baseline": {
+              "variant": "baseline",
+              "risk_score": 0.2,
+              "classification": "LEGITIMATE",
+              "anomaly_score": 1.0,
+              "explanation": [
+                "No configured high-risk rule was triggered.",
+                "Isolation Forest anomaly signal: 1.00 (0–1)."
+              ]
+            },
+            "perturbed": {
+              "variant": "perturbed",
+              "risk_score": 0.44,
+              "classification": "LEGITIMATE",
+              "anomaly_score": 1.0,
+              "explanation": [
+                "High transaction velocity (>= 5 transactions/hour).",
+                "Isolation Forest anomaly signal: 1.00 (0–1)."
+              ]
+            },
+            "classification_changed": false,
+            "risk_score_delta": 0.24
+          }
+        ],
+        "scope": "Synthetic transaction feature changes; no training data or production model was modified.",
+        "interpretation_note": "A changed score is a sensitivity signal, not by itself proof of exploitable model evasion."
+      },
+      "analysis": "Based on the provided controlled AI input-perturbation results, here's the analysis:\n\n**Score Changes:**\n\n* In the \"amount_threshold_neighbourhood\" test, the baseline risk score is 0.2, and the perturbed risk score is 0.48, resulting in a delta of 0.28.\n* In the \"velocity_threshold_neighbourhood\" test, the baseline risk score is 0.2, and the perturbed risk score is 0.44, resulting in a delta of 0.24.\n\nThese score changes indicate that the model's predictions are sensitive to the perturbed inputs, as the risk scores increased in both tests.\n\n**Classification Flips:**\n\n* In neither of the two tests did the classification change (i.e., the classification remained \"LEGITIMATE\" in both baseline and perturbed scenarios).\n\n**Threshold Sensitivity:**\n\n* The threshold for the model to classify an input as an anomaly appears to be around the risk score of 0.5. Both perturbed inputs, with risk scores of 0.48 and 0.44, are below this threshold, indicating that the model is not yet flagging these inputs as anomalies.\n\n**Limitations:**\n\n* The model's inability to detect anomalies in the perturbed scenarios may indicate a lack of robustness to input perturbations.\n* The small delta in risk scores (0.28 and 0.24) might suggest that the model is not sensitive enough to detect changes in input features.\n\n**Recommendations:**\n\n1. **Robustness Tests:** Conduct more extensive perturbation tests to evaluate the model's robustness to various input perturbations.\n2. **Feature Validation:** Validate the feature importance and relevance to ensure that the model is relying on the correct input features.\n3. **Drift Monitoring:** Implement drift monitoring to detect changes in the data distribution over time and adjust the model accordingly.\n4. **Human Review:** Perform regular human reviews of the model's predictions to identify potential issues and provide feedback to improve the model's performance.\n5. **Data Augmentation:** Consider incorporating data augmentation techniques to increase the model's robustness to input perturbations.\n\nKeep in mind that this analysis is based on synthetic input perturbations, and the results may not directly translate to real-world scenarios. Further testing and evaluation are necessary to determine the model's performance in a production environment."
+    },
+    "4_compliance_breaker": {
+      "evidence": {
+        "assessment_scope": "Training simulator only; findings are preliminary control observations, not legal conclusions.",
+        "controls": [
+          {
+            "framework": "DORA",
+            "control": "ICT access control and protection of exposed interfaces",
+            "status": "REVIEW_REQUIRED",
+            "evidence": "The simulator exposes POST /analyze. The current test did not evaluate identity management, authentication configuration, or authorization roles."
+          },
+          {
+            "framework": "DORA",
+            "control": "Logging and traceability of security-relevant events",
+            "status": "PARTIALLY_OBSERVED",
+            "evidence": "A logs endpoint exists in the simulator. Log integrity, retention, access restrictions, and alerting were not tested."
+          },
+          {
+            "framework": "EU AI Act",
+            "control": "AI system documentation, logging, monitoring and human oversight where applicable",
+            "status": "REVIEW_REQUIRED",
+            "evidence": "The API records model_version and decision explanations. Dataset provenance, model documentation, human oversight, risk classification and lifecycle governance were not evidenced in this stage."
+          },
+          {
+            "framework": "GDPR",
+            "control": "Data minimisation, lawful basis, retention and data-subject rights where personal data is processed",
+            "status": "NOT_ASSESSED",
+            "evidence": "The lab uses synthetic transaction records. No conclusion about GDPR compliance in a real deployment can be drawn."
+          },
+          {
+            "framework": "MiCA",
+            "control": "Crypto-asset service controls where in-scope crypto-asset services are provided",
+            "status": "NOT_ASSESSED",
+            "evidence": "A crypto_exchange merchant category appears in synthetic data, but the simulator does not implement custody, exchange, transfer or other crypto-asset service workflows."
+          }
+        ],
+        "attack_test_summary": {
+          "conventional_tests": [
+            {
+              "name": "synthetic_transaction_submission",
+              "http_status": 200,
+              "accepted": true,
+              "authorization_header_sent": false,
+              "response": {
+                "transaction": {
+                  "id": 108,
+                  "transaction_ref": "RT-CYBER-457A004CF5",
+                  "amount": 7600.0,
+                  "currency": "EUR",
+                  "country_code": "FR",
+                  "merchant_category": "retail",
+                  "channel": "online",
+                  "account_age_days": 12,
+                  "transactions_last_hour": 6,
+                  "is_cross_border": true,
+                  "status": "ANALYZED",
+                  "risk_score": 1.0,
+                  "classification": "SUSPICIOUS",
+                  "anomaly_score": 1.0,
+                  "model_version": "arms-baseline-1.0",
+                  "created_at": "2026-11-14T05:15:18.147301"
+                },
+                "explanation": [
+                  "High transaction amount (>= EUR 5,000).",
+                  "High transaction velocity (>= 5 transactions/hour).",
+                  "Cross-border transaction.",
+                  "Recently created account (< 30 days).",
+                  "Isolation Forest anomaly signal: 1.00 (0–1)."
+                ],
+                "decision": "SUSPICIOUS"
+              },
+              "interpretation": "A test transaction was accepted without an Authorization header; this is a lab observation, not proof of a production breach."
+            },
+            {
+              "name": "negative_amount_validation",
+              "http_status": 422,
+              "rejected_as_expected": true
+            },
+            {
+              "name": "duplicate_reference_protection",
+              "http_status": 409,
+              "rejected_as_expected": true
+            }
+          ],
+          "ai_perturbation_tests": [
+            {
+              "test": "amount_threshold_neighbourhood",
+              "baseline": {
+                "variant": "baseline",
+                "risk_score": 0.2,
+                "classification": "LEGITIMATE",
+                "anomaly_score": 1.0,
+                "explanation": [
+                  "No configured high-risk rule was triggered.",
+                  "Isolation Forest anomaly signal: 1.00 (0–1)."
+                ]
+              },
+              "perturbed": {
+                "variant": "perturbed",
+                "risk_score": 0.48,
+                "classification": "LEGITIMATE",
+                "anomaly_score": 1.0,
+                "explanation": [
+                  "High transaction amount (>= EUR 5,000).",
+                  "Isolation Forest anomaly signal: 1.00 (0–1)."
+                ]
+              },
+              "classification_changed": false,
+              "risk_score_delta": 0.28
+            },
+            {
+              "test": "velocity_threshold_neighbourhood",
+              "baseline": {
+                "variant": "baseline",
+                "risk_score": 0.2,
+                "classification": "LEGITIMATE",
+                "anomaly_score": 1.0,
+                "explanation": [
+                  "No configured high-risk rule was triggered.",
+                  "Isolation Forest anomaly signal: 1.00 (0–1)."
+                ]
+              },
+              "perturbed": {
+                "variant": "perturbed",
+                "risk_score": 0.44,
+                "classification": "LEGITIMATE",
+                "anomaly_score": 1.0,
+                "explanation": [
+                  "High transaction velocity (>= 5 transactions/hour).",
+                  "Isolation Forest anomaly signal: 1.00 (0–1)."
+                ]
+              },
+              "classification_changed": false,
+              "risk_score_delta": 0.24
+            }
+          ]
+        },
+        "not_tested": [
+          "Real identity provider and role-based access control",
+          "Third-party ICT provider contracts and exit plans",
+          "Incident response and disaster recovery exercises",
+          "Crypto-asset custody and key management",
+          "Production personal data processing and retention"
+        ]
+      },
+      "analysis": "Here are the observations and test results assessed against the provided frameworks:\n\n1. **DORA - ICT access control and protection of exposed interfaces**\n\t* Status: REVIEW_REQUIRED\n\t* Evidence: The simulator exposes POST /analyze. The current test did not evaluate identity management, authentication configuration, or authorization roles.\n\t* Applicability: This observation is relevant to DORA, as ICT access control and protection of exposed interfaces are crucial for securing the system.\n\t* Potential Consequence: An unauthorized access to the system could lead to data breaches or system compromise.\n\t* Practical Remediation: Implement identity management, authentication configuration, and authorization roles to protect exposed interfaces.\n2. **DORA - Logging and traceability of security-relevant events**\n\t* Status: PARTIALLY_OBSERVED\n\t* Evidence: A logs endpoint exists in the simulator. Log integrity, retention, access restrictions, and alerting were not tested.\n\t* Applicability: This observation is relevant to DORA, as logging and traceability of security-relevant events are essential for incident response and forensic analysis.\n\t* Potential Consequence: Inadequate logging could lead to delayed incident detection and response.\n\t* Practical Remediation: Implement log integrity, retention, access restrictions, and alerting mechanisms.\n3. **EU AI Act - AI system documentation, logging, monitoring, and human oversight where applicable**\n\t* Status: REVIEW_REQUIRED\n\t* Evidence: The API records model_version and decision explanations. Dataset provenance, model documentation, human oversight, risk classification, and lifecycle governance were not evidenced in this stage.\n\t* Applicability: This observation is relevant to the EU AI Act, as AI system documentation, logging, monitoring, and human oversight are essential for accountability and transparency.\n\t* Potential Consequence: Inadequate documentation and oversight could lead to accountability issues and regulatory non-compliance.\n\t* Practical Remediation: Implement dataset provenance, model documentation, human oversight, risk classification, and lifecycle governance mechanisms.\n4. **GDPR - Data minimisation, lawful basis, retention, and data-subject rights where personal data is processed**\n\t* Status: NOT_ASSESSED\n\t* Evidence: The lab uses synthetic transaction records. No conclusion about GDPR compliance in a real deployment can be drawn.\n\t* Applicability: This observation is relevant to GDPR, as data minimisation, lawful basis, retention, and data-subject rights are essential for personal data protection.\n\t* Potential Consequence: Inadequate data protection could lead to data subject rights violations and regulatory non-compliance.\n\t* Practical Remediation: Assess GDPR compliance in a real deployment and implement data minimisation, lawful basis, retention, and data-subject rights mechanisms.\n5. **MiCA - Crypto-asset service controls where in-scope crypto-asset services are provided**\n\t* Status: NOT_ASSESSED\n\t* Evidence: A crypto_exchange merchant category appears in synthetic data, but the simulator does not implement custody, exchange, transfer, or other crypto-asset service workflows.\n\t* Applicability: This observation is relevant to MiCA, as crypto-asset service controls are essential for ensuring the security and integrity of crypto-asset transactions.\n\t* Potential Consequence: Inadequate crypto-asset service controls could lead to security and integrity issues in crypto-asset transactions.\n\t* Practical Remediation: Assess MiCA compliance and implement crypto-asset service controls, including custody, exchange, transfer, and other crypto-asset service workflows.\n\nNote: The \"NOT_ASSESSED\" status indicates that the observation is not relevant to the framework, or the assessment is incomplete. The \"REVIEW_REQUIRED\" status indicates that the observation requires further review and analysis. The \"PARTIALLY_OBSERVED\" status indicates that the observation is partially relevant, but some aspects are not assessed."
+    },
+    "5_impact_risk_scoring": {
+      "evidence": {
+        "score": 0.652,
+        "severity": "MEDIUM",
+        "scale": "0 to 1; higher means greater simulated risk",
+        "formula": "0.35*business_impact + 0.25*likelihood + 0.20*regulatory_exposure + 0.20*control_weakness",
+        "factors": {
+          "business_impact": 0.7,
+          "likelihood": 0.75,
+          "regulatory_exposure": 0.65,
+          "control_weakness": 0.45
+        },
+        "findings": [
+          {
+            "id": "RT-API-001",
+            "title": "Synthetic transaction submission accepted by the lab API",
+            "priority": "HIGH",
+            "evidence": "HTTP 200",
+            "remediation": "For a real deployment, enforce authentication, authorization, request signing where appropriate, rate limits and transaction provenance. The lab currently has no production identity layer."
+          },
+          {
+            "id": "RT-API-002",
+            "title": "Input validation and duplicate-reference controls",
+            "priority": "LOW",
+            "evidence": "Negative amount rejected=True; duplicate rejected=True.",
+            "remediation": "Retain server-side schema validation and unique transaction references; add regression tests for boundary values."
+          },
+          {
+            "id": "RT-AI-001",
+            "title": "Model sensitivity to small input changes",
+            "priority": "MEDIUM",
+            "evidence": "Classification flips=0; maximum absolute risk-score delta=0.280.",
+            "remediation": "Expand adversarial robustness tests, calibrate thresholds, monitor drift and require human review for high-impact decisions."
+          }
+        ],
+        "limitations": [
+          "This is a classroom scoring heuristic, not a bank-approved risk model.",
+          "Financial loss is not estimated because no validated loss assumptions or exposure data are supplied.",
+          "Regulatory exposure is a prioritisation proxy, not a legal determination."
+        ]
+      },
+      "analysis": "**Risk Assessment Explanation and Prioritization**\n\nThe computed risk assessment indicates a medium-level risk (Severity: MEDIUM) with a score of 0.652 on a scale of 0 to 1. This score is the result of a weighted formula that combines the likelihood, business impact, regulatory exposure, and control weakness factors.\n\n**Assumptions and Limitations:**\n\n1. This risk assessment is based on a classroom scoring heuristic, not a bank-approved risk model.\n2. Financial loss is not estimated, as no validated loss assumptions or exposure data are supplied.\n3. Regulatory exposure is a prioritization proxy, not a legal determination.\n\n**Findings and Prioritization:**\n\nThe findings are ranked based on their priority and risk score:\n\n1. **RT-API-001: Synthetic transaction submission accepted by the lab API** (Score: 0.35, Priority: HIGH)\n\t* The lab API accepts synthetic transactions without authentication, authorization, or request signing, which poses a high risk.\n\t* Remediation: Enforce authentication, authorization, request signing, rate limits, and transaction provenance.\n2. **RT-AI-001: Model sensitivity to small input changes** (Score: 0.22, Priority: MEDIUM)\n\t* The model is sensitive to small input changes, which may lead to incorrect classification or risk-score delta.\n\t* Remediation: Expand adversarial robustness tests, calibrate thresholds, monitor drift, and require human review for high-impact decisions.\n3. **RT-API-002: Input validation and duplicate-reference controls** (Score: 0.16, Priority: LOW)\n\t* Input validation and duplicate-reference controls are not adequately implemented, which poses a low risk.\n\t* Remediation: Retain server-side schema validation and unique transaction references, and add regression tests for boundary values.\n\n**Plausible Business Consequences:**\n\nIf left unaddressed, these findings may lead to:\n\n1. **RT-API-001:** Unauthorized access to sensitive data or systems, resulting in data breaches or financial loss.\n2. **RT-AI-001:** Inaccurate risk assessments or decisions, leading to suboptimal business outcomes or regulatory non-compliance.\n3. **RT-API-002:** Minor disruptions or inefficiencies due to input validation and duplicate-reference issues.\n\n**Recommendations:**\n\n1. Prioritize the remediation of RT-API-001, as it poses a high risk and can be mitigated with authentication and authorization controls.\n2. Implement robust testing and calibration of the AI model (RT-AI-001) to ensure accurate risk assessments and decisions.\n3. Address the input validation and duplicate-reference issues (RT-API-002) to prevent minor disruptions.\n\nBy addressing these findings, the organization can reduce the risk score and improve the overall resilience of its systems and operations."
+    }
+  },
+  "final_risk": {
+    "score": 0.652,
+    "severity": "MEDIUM",
+    "scale": "0 to 1; higher means greater simulated risk",
+    "formula": "0.35*business_impact + 0.25*likelihood + 0.20*regulatory_exposure + 0.20*control_weakness",
+    "factors": {
+      "business_impact": 0.7,
+      "likelihood": 0.75,
+      "regulatory_exposure": 0.65,
+      "control_weakness": 0.45
+    },
+    "findings": [
+      {
+        "id": "RT-API-001",
+        "title": "Synthetic transaction submission accepted by the lab API",
+        "priority": "HIGH",
+        "evidence": "HTTP 200",
+        "remediation": "For a real deployment, enforce authentication, authorization, request signing where appropriate, rate limits and transaction provenance. The lab currently has no production identity layer."
+      },
+      {
+        "id": "RT-API-002",
+        "title": "Input validation and duplicate-reference controls",
+        "priority": "LOW",
+        "evidence": "Negative amount rejected=True; duplicate rejected=True.",
+        "remediation": "Retain server-side schema validation and unique transaction references; add regression tests for boundary values."
+      },
+      {
+        "id": "RT-AI-001",
+        "title": "Model sensitivity to small input changes",
+        "priority": "MEDIUM",
+        "evidence": "Classification flips=0; maximum absolute risk-score delta=0.280.",
+        "remediation": "Expand adversarial robustness tests, calibrate thresholds, monitor drift and require human review for high-impact decisions."
+      }
+    ],
+    "limitations": [
+      "This is a classroom scoring heuristic, not a bank-approved risk model.",
+      "Financial loss is not estimated because no validated loss assumptions or exposure data are supplied.",
+      "Regulatory exposure is a prioritisation proxy, not a legal determination."
+    ]
+  },
+  "stage": {
+    "robustness": {
+      "evaluation_scope": "Fixed synthetic scenario cohort; expected labels are authored test expectations, not real-world ground truth.",
+      "model_version": "arms-baseline-1.0",
+      "cohort_size": 6,
+      "passed_cases": 3,
+      "scenario_pass_rate": 0.5,
+      "confusion_counts": {
+        "tp": 1,
+        "tn": 2,
+        "fp": 0,
+        "fn": 3
+      },
+      "synthetic_precision": 1.0,
+      "synthetic_recall": 0.25,
+      "cases": [
+        {
+          "case_id": "benign_low_value",
+          "expected": "LEGITIMATE",
+          "actual": "LEGITIMATE",
+          "risk_score": 0.0079,
+          "passed": true
+        },
+        {
+          "case_id": "benign_cross_border",
+          "expected": "LEGITIMATE",
+          "actual": "LEGITIMATE",
+          "risk_score": 0.32,
+          "passed": true
+        },
+        {
+          "case_id": "high_amount",
+          "expected": "SUSPICIOUS",
+          "actual": "LEGITIMATE",
+          "risk_score": 0.48,
+          "passed": false
+        },
+        {
+          "case_id": "high_velocity",
+          "expected": "SUSPICIOUS",
+          "actual": "LEGITIMATE",
+          "risk_score": 0.368,
+          "passed": false
+        },
+        {
+          "case_id": "new_account_cross_border",
+          "expected": "SUSPICIOUS",
+          "actual": "LEGITIMATE",
+          "risk_score": 0.48,
+          "passed": false
+        },
+        {
+          "case_id": "combined_signals",
+          "expected": "SUSPICIOUS",
+          "actual": "SUSPICIOUS",
+          "risk_score": 1.0,
+          "passed": true
+        }
+      ],
+      "threshold_perturbations": [
+        {
+          "test": "amount_threshold",
+          "baseline_classification": "LEGITIMATE",
+          "perturbed_classification": "LEGITIMATE",
+          "classification_changed": false,
+          "baseline_risk_score": 0.2,
+          "perturbed_risk_score": 0.48,
+          "risk_delta": 0.28,
+          "interpretation": "No classification flip observed."
+        },
+        {
+          "test": "velocity_threshold",
+          "baseline_classification": "LEGITIMATE",
+          "perturbed_classification": "LEGITIMATE",
+          "classification_changed": false,
+          "baseline_risk_score": 0.128,
+          "perturbed_risk_score": 0.368,
+          "risk_delta": 0.24,
+          "interpretation": "No classification flip observed."
+        },
+        {
+          "test": "account_age_threshold",
+          "baseline_classification": "LEGITIMATE",
+          "perturbed_classification": "LEGITIMATE",
+          "classification_changed": false,
+          "baseline_risk_score": 0.1434,
+          "perturbed_risk_score": 0.3034,
+          "risk_delta": 0.16,
+          "interpretation": "No classification flip observed."
+        }
+      ],
+      "limitations": [
+        "Synthetic scenario labels are not verified fraud labels.",
+        "Small cohort; metrics are demonstrative and not statistically representative.",
+        "No model retraining, data poisoning, or production data access is performed."
+      ]
+    },
+    "regulatory_matrix": {
+      "disclaimer": "Indicative evidence mapping for a classroom simulator. It is not a legal opinion, formal gap assessment, or compliance certification.",
+      "controls": [
+        {
+          "framework": "DORA",
+          "reference": "Article 9",
+          "theme": "Protection and prevention",
+          "test": "API access control and least privilege",
+          "evidence_key": "conventional_attack",
+          "status_rule": "REVIEW_REQUIRED",
+          "note": "The simulator exposes analysis and read endpoints; authentication/authorization controls are not implemented in this lab."
+        },
+        {
+          "framework": "DORA",
+          "reference": "Article 10",
+          "theme": "Detection",
+          "test": "Monitoring, anomaly detection and alert handling",
+          "evidence_key": "robustness",
+          "status_rule": "PARTIAL_EVIDENCE",
+          "note": "Synthetic detection scenarios are evaluated; operational monitoring and alert SLAs are outside scope."
+        },
+        {
+          "framework": "DORA",
+          "reference": "Article 17",
+          "theme": "ICT-related incident management",
+          "test": "Incident classification, escalation and evidence retention",
+          "evidence_key": "audit_logs",
+          "status_rule": "NOT_VERIFIED",
+          "note": "Audit events exist; retention, tamper resistance and escalation workflows are not tested."
+        },
+        {
+          "framework": "GDPR",
+          "reference": "Articles 5 and 25",
+          "theme": "Data minimisation and privacy by design",
+          "test": "Purpose limitation, minimisation and privacy controls",
+          "evidence_key": "data_scope",
+          "status_rule": "NOT_ASSESSED",
+          "note": "Only synthetic data is used; no personal-data processing assessment is performed."
+        },
+        {
+          "framework": "GDPR",
+          "reference": "Article 32",
+          "theme": "Security of processing",
+          "test": "Confidentiality, integrity, availability and resilience",
+          "evidence_key": "conventional_attack",
+          "status_rule": "PARTIAL_EVIDENCE",
+          "note": "Input validation and duplicate handling are tested; encryption, access management and resilience are not assessed."
+        },
+        {
+          "framework": "EU AI Act",
+          "reference": "Articles 9, 10 and 15",
+          "theme": "Risk, data governance and robustness",
+          "test": "Model risk, data quality, robustness and cybersecurity",
+          "evidence_key": "robustness",
+          "status_rule": "PARTIAL_EVIDENCE",
+          "note": "Synthetic robustness tests are provided; legal high-risk classification and full lifecycle controls require separate assessment."
+        },
+        {
+          "framework": "EU AI Act",
+          "reference": "Articles 12 and 14",
+          "theme": "Record-keeping and human oversight",
+          "test": "Traceability, logging and human intervention",
+          "evidence_key": "audit_logs",
+          "status_rule": "PARTIAL_EVIDENCE",
+          "note": "Model version and explanations are logged; human oversight workflow is not implemented."
+        },
+        {
+          "framework": "MiCA",
+          "reference": "Conditional applicability",
+          "theme": "Crypto-asset services",
+          "test": "Determine whether crypto-asset services are in scope",
+          "evidence_key": "crypto_scope",
+          "status_rule": "NOT_ASSESSED",
+          "note": "A merchant-category string alone does not establish a crypto-asset service or MiCA applicability."
+        }
+      ],
+      "status_legend": {
+        "REVIEW_REQUIRED": "A control area is exposed by the simulator and needs direct review.",
+        "PARTIAL_EVIDENCE": "Some limited test evidence exists; the control is not fully validated.",
+        "NOT_VERIFIED": "The control has not been tested.",
+        "NOT_ASSESSED": "Applicability or evidence has not been assessed."
+      }
+    },
+    "scenario_catalog": "scenarios/stage3_scenarios.json"
+  }
+}

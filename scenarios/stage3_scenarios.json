@@ -1,0 +1,11 @@
+{
+  "scope": "Local ARMS simulator and synthetic transactions only",
+  "scenarios": [
+    {"id": "ST3-CYBER-01", "name": "Unauthenticated analysis endpoint", "category": "conventional_cyber", "method": "POST /analyze without an Authorization header", "expected_observation": "Endpoint accepts the request in the current lab; authentication is not implemented", "risk_area": "DORA Article 9; GDPR Article 32", "execution": "Existing Stage 2 controlled API test"},
+    {"id": "ST3-CYBER-02", "name": "Schema boundary validation", "category": "conventional_cyber", "method": "Submit an invalid negative transaction amount", "expected_observation": "Request rejected by Pydantic validation", "risk_area": "Input validation and API robustness", "execution": "Existing Stage 2 controlled API test"},
+    {"id": "ST3-CYBER-03", "name": "Duplicate replay", "category": "conventional_cyber", "method": "Submit the same synthetic transaction reference twice", "expected_observation": "Second request rejected with HTTP 409", "risk_area": "Integrity and idempotency", "execution": "Existing Stage 2 controlled API test"},
+    {"id": "ST3-AI-01", "name": "Threshold evasion sensitivity", "category": "ai_adversarial", "method": "Perturb synthetic amount and velocity around configured decision thresholds", "expected_observation": "Report classification flips and score deltas", "risk_area": "EU AI Act robustness and risk management", "execution": "Stage 3 robustness evaluation"},
+    {"id": "ST3-AI-02", "name": "Feature-boundary sensitivity", "category": "ai_adversarial", "method": "Perturb synthetic account age around 30 days", "expected_observation": "Report classification flips and score deltas", "risk_area": "Model robustness and calibration", "execution": "Stage 3 robustness evaluation"},
+    {"id": "ST3-GOV-01", "name": "Auditability and oversight review", "category": "governance", "method": "Inspect available audit fields and documented control evidence", "expected_observation": "Separate evidenced controls from unverified requirements", "risk_area": "DORA, GDPR and EU AI Act", "execution": "Stage 3 regulatory mapping"}
+  ]
+}

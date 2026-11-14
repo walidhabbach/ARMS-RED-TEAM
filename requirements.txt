@@ -1,0 +1,15 @@
+agno
+openai
+ollama
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+sqlalchemy
+scikit-learn
+numpy
+pandas
+pytest
+httpx
+streamlit
