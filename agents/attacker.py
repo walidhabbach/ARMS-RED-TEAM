@@ -1,5 +1,6 @@
 """Conventional attack simulation using synthetic data and local API only."""
 import os
+import time
 import uuid
 import httpx
 from agents.runtime import build_agent, run_text
@@ -26,9 +27,19 @@ def run_conventional_simulation() -> dict:
 
     with httpx.Client(timeout=timeout) as client:
         # This is a controlled synthetic request to the local lab API.
+        t_submit = time.perf_counter()
         submit = client.post(f"{BASE_URL}/analyze", json=payload)
         validation = client.post(f"{BASE_URL}/analyze", json=invalid_payload)
         duplicate = client.post(f"{BASE_URL}/transactions", json=payload)
+
+        # Detection evidence: is the attack visible in /alerts and /logs, and how fast?
+        alerts = client.get(f"{BASE_URL}/alerts", params={"limit": 500})
+        detection_latency_ms = round((time.perf_counter() - t_submit) * 1000)
+        logs = client.get(f"{BASE_URL}/logs", params={"limit": 1000})
+    alert_rows = alerts.json() if alerts.status_code == 200 else []
+    log_rows = logs.json() if logs.status_code == 200 else []
+    matching_alert = next((r for r in alert_rows if r.get("transaction_ref") == ref), None)
+    audit_events = [r.get("event_type") for r in log_rows if ref in str(r.get("details", ""))]
 
     result = {
         "scenario": "synthetic_transaction_injection_and_validation_test",
@@ -51,6 +62,16 @@ def run_conventional_simulation() -> dict:
                 "name": "duplicate_reference_protection",
                 "http_status": duplicate.status_code,
                 "rejected_as_expected": duplicate.status_code == 409,
+            },
+            {
+                "name": "detection_and_audit_trail_check",
+                "transaction_ref": ref,
+                "listed_in_alerts": matching_alert is not None,
+                "matching_alert": {k: matching_alert.get(k) for k in ("id", "risk_score", "classification", "created_at")} if matching_alert else None,
+                "detection_latency_ms_upper_bound": detection_latency_ms if matching_alert else None,
+                "audit_events_for_transaction": audit_events,
+                "attack_blocked": submit.status_code != 200,
+                "notification_mechanism": "none exposed by the API (alerts are only pulled via GET /alerts)",
             },
         ],
         "scope": "Local ARMS simulator and synthetic records only",

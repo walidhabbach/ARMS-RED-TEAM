@@ -1,0 +1,21 @@
+{
+  "_comment": "Informations non observables par les agents. Les valeurs null sont affichees 'Non documente' dans le rapport ; ne rien inventer.",
+  "architecture": {
+    "components": [
+      "FastAPI (arms/api.py)",
+      "SQLAlchemy + SQLite (arms/database.py)",
+      "Moteur de detection : regles + Isolation Forest (arms/fraud_detection.py)",
+      "Journal d'audit (table audit_logs)"
+    ],
+    "internal_flows": [
+      "POST /transactions : API -> SQLAlchemy -> table transactions (PENDING) + audit TRANSACTION_CREATED",
+      "POST /analyze : API -> fraud_engine (regles puis Isolation Forest) -> table transactions (ANALYZED) + audit TRANSACTION_ANALYZED",
+      "GET /alerts : API -> requete transactions WHERE classification = SUSPICIOUS",
+      "GET /logs : API -> lecture table audit_logs"
+    ]
+  },
+  "mica": {
+    "crypto_asset_services_in_scope": null,
+    "note": "Applicabilite a confirmer avec le juridique ; la categorie 'crypto_exchange' des donnees synthetiques ne suffit pas."
+  }
+}

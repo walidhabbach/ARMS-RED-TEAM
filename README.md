@@ -357,7 +357,7 @@ The reports contain:
 Launch Streamlit:
 
 ```bash
-streamlit run dashboard/app.py
+python -m streamlit run dashboard/app.py
 ```
 
 The dashboard visualizes:
@@ -377,7 +377,7 @@ The dashboard visualizes:
 Run all tests:
 
 ```bash
-pytest -q
+python -m pytest -q
 ```
 
 Tests cover:

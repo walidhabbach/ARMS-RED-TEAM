@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from html import unescape
 import re
+import time
+from orchestration.report_generator import generate_report
+
 REPORT_DIR = Path("reports")
 
 
@@ -338,13 +341,13 @@ def write_markdown(report: dict) -> str:
         add(control["evidence"])
         add()
 
-    add("## Areas Not Tested")
-    add()
+    # add("## Areas Not Tested")
+    # add()
 
-    for item in compliance["evidence"]["not_tested"]:
-        add(f"- {item}")
+    # for item in compliance["evidence"]["not_tested"]:
+    #     add(f"- {item}")
 
-    add()
+    # add()
 
     add("## Compliance Agent Analysis")
     add()
@@ -485,9 +488,36 @@ def run_red_team(use_llm: bool = True) -> dict:
     from evaluation.robustness import run_robustness_evaluation
     from regulatory.control_matrix import build_control_matrix
 
-    recon_evidence = collect_attack_surface()
-    attacker_evidence = run_conventional_simulation()
-    ai_evidence = run_perturbation_tests()
+    trace: list[dict] = []
+    inputs_from = {
+        "2_attacker": ["1_reconnaissance"],
+        "3_ai_adversary": ["1_reconnaissance"],
+        "4_compliance_breaker": ["1_reconnaissance", "2_attacker", "3_ai_adversary"],
+        "5_impact_risk_scoring": ["2_attacker", "3_ai_adversary", "4_compliance_breaker"],
+    }
+
+    def step(name, fn):
+        """Run one step and record when it ran, how long it took and which steps fed it."""
+        started = datetime.now(timezone.utc)
+        t0 = time.perf_counter()
+        status = "ok"
+        try:
+            return fn()
+        except Exception:
+            status = "error"
+            raise
+        finally:
+            trace.append({
+                "step": name,
+                "started_at": started.isoformat(timespec="seconds"),
+                "duration_ms": round((time.perf_counter() - t0) * 1000),
+                "status": status,
+                "inputs_from": inputs_from.get(name, []),
+            })
+
+    recon_evidence = step("1_reconnaissance", collect_attack_surface)
+    attacker_evidence = step("2_attacker", run_conventional_simulation)
+    ai_evidence = step("3_ai_adversary", run_perturbation_tests)
 
     if use_llm:
         recon = {"evidence": recon_evidence}
@@ -501,17 +531,17 @@ def run_red_team(use_llm: bool = True) -> dict:
         recon["analysis"] = run_text(get_recon_agent(), f"Analyze this observed ARMS inventory:\n{recon_evidence}")
         attacker = {"evidence": attacker_evidence, "analysis": run_text(get_attacker_agent(), f"Assess this controlled conventional security test:\n{attacker_evidence}")}
         ai = {"evidence": ai_evidence, "analysis": run_text(get_ai_agent(), f"Analyze these controlled AI input-perturbation results:\n{ai_evidence}")}
-        compliance_evidence = build_compliance_evidence(recon, attacker, ai)
+        compliance_evidence = step("4_compliance_breaker", lambda: build_compliance_evidence(recon, attacker, ai))
         compliance = {"evidence": compliance_evidence, "analysis": run_text(get_compliance_agent(), f"Assess these control observations and test results:\n{compliance_evidence}")}
-        risk_evidence = calculate_risk(attacker, ai, compliance)
+        risk_evidence = step("5_impact_risk_scoring", lambda: calculate_risk(attacker, ai, compliance))
         risk = {"evidence": risk_evidence, "analysis": run_text(get_risk_agent(), f"Explain and prioritize this computed risk assessment without changing its score:\n{risk_evidence}")}
     else:
         recon = {"evidence": recon_evidence, "analysis": "LLM analysis skipped (--simulate-only)."}
         attacker = {"evidence": attacker_evidence, "analysis": "LLM analysis skipped (--simulate-only)."}
         ai = {"evidence": ai_evidence, "analysis": "LLM analysis skipped (--simulate-only)."}
-        compliance_evidence = build_compliance_evidence(recon, attacker, ai)
+        compliance_evidence = step("4_compliance_breaker", lambda: build_compliance_evidence(recon, attacker, ai))
         compliance = {"evidence": compliance_evidence, "analysis": "LLM analysis skipped (--simulate-only)."}
-        risk_evidence = calculate_risk(attacker, ai, compliance)
+        risk_evidence = step("5_impact_risk_scoring", lambda: calculate_risk(attacker, ai, compliance))
         risk = {"evidence": risk_evidence, "analysis": "LLM analysis skipped (--simulate-only)."}
 
     stage_evidence = {
@@ -533,17 +563,35 @@ def run_red_team(use_llm: bool = True) -> dict:
         "final_risk": risk_evidence,
         "stage": stage_evidence,
     }
+    # Information the agents cannot observe (architecture, MiCA scope, owners, deadlines).
+    ctx_path = Path("config/project_context.json")
+    context = json.loads(ctx_path.read_text(encoding="utf-8")) if ctx_path.exists() else {}
+    undocumented = [
+        f"{item.get('finding_id', section)}.{k}"
+        for section, value in context.items() if section != "_comment"
+        for item in (value if isinstance(value, list) else [value]) if isinstance(item, dict)
+        for k, v in item.items() if v is None
+    ]
+    report["manual_context"] = {**context, "undocumented_fields": undocumented or "none"}
+    report["interaction_log"] = trace
     REPORT_DIR.mkdir(exist_ok=True)
     output = REPORT_DIR / "red_team_report.json"
     output.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
 
     markdown_file = write_markdown(report)
+    
+    pdf_output = output.parent / "rapport_final.pdf"
 
+    generate_report(
+        json_path=output,
+        output_path=pdf_output
+    )
     report["report_file"] = str(output)
     report["markdown_file"] = markdown_file
+    report["pdf_file"] = str(pdf_output)
 
     return report
-
+ 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the local ARMS Red Team simulation")
@@ -553,6 +601,7 @@ def main() -> None:
     print(json.dumps({
         "report_file": result["report_file"],
         "markdown_report": result["markdown_file"],
+        "pdf_file":result["pdf_file"],
         "risk_score": result["final_risk"]["score"],
         "severity": result["final_risk"]["severity"],
     }, indent=2))

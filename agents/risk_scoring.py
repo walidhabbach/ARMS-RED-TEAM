@@ -55,6 +55,9 @@ def calculate_risk(attacker: dict, ai_adversary: dict, compliance: dict) -> dict
             "remediation": "Expand adversarial robustness tests, calibrate thresholds, monitor drift and require human review for high-impact decisions.",
         },
     ]
+    # RT-API-002 reports controls that work; flag it so it is not shown as a vulnerability.
+    for f in findings:
+        f["type"] = "validated_control" if f["id"] == "RT-API-002" and f["priority"] == "LOW" else "vulnerability"
     return {
         "score": score,
         "severity": severity,

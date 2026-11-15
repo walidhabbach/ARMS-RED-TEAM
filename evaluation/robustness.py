@@ -14,6 +14,9 @@ import numpy as np
 from arms.fraud_detection import fraud_engine
 
 
+DECISION_THRESHOLD = 0.60  # mirrors the SUSPICIOUS threshold in arms/fraud_detection.py
+
+
 @dataclass
 class EvaluationCase:
     case_id: str
@@ -46,9 +49,21 @@ def run_robustness_evaluation() -> dict:
         ("combined_signals", "SUSPICIOUS", _transaction(amount=7200, transactions_last_hour=8, account_age_days=5, is_cross_border=True)),
     ]
     cases: list[EvaluationCase] = []
+    details: dict[str, dict] = {}
     for case_id, expected, tx in cohort:
         result = fraud_engine.analyze(tx)
         cases.append(EvaluationCase(case_id, expected, result.classification, result.risk_score, result.classification == expected))
+        rules = [e for e in result.explanation if not e.startswith("Isolation Forest") and not e.startswith("No configured")]
+        details[case_id] = {
+            "triggered_rules": rules,
+            "anomaly_score": result.anomaly_score,
+            "decision_threshold": DECISION_THRESHOLD,
+            "gap_to_threshold": round(max(DECISION_THRESHOLD - result.risk_score, 0), 4),
+            "cause": (
+                f"{len(rules)} rule(s) triggered; combined score {result.risk_score} < threshold {DECISION_THRESHOLD} "
+                "(rule score is weighted 0.80 and the anomaly signal adds at most 0.20)."
+            ) if expected == "SUSPICIOUS" and result.classification != "SUSPICIOUS" else None,
+        }
 
     # Small perturbations around configured rule boundaries: amount 5,000 and
     # velocity 5. We report flips rather than claiming all flips are defects.
@@ -90,7 +105,7 @@ def run_robustness_evaluation() -> dict:
         "confusion_counts": confusion,
         "synthetic_precision": round(precision, 4),
         "synthetic_recall": round(recall, 4),
-        "cases": [asdict(case) for case in cases],
+        "cases": [{**asdict(case), **details[case.case_id]} for case in cases],
         "threshold_perturbations": flips,
         "limitations": [
             "Synthetic scenario labels are not verified fraud labels.",
